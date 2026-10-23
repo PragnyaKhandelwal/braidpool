@@ -425,6 +425,29 @@ class TestNetworkClass(unittest.TestCase):
         self.assertEqual(self.network.t, 0.0)
         self.assertEqual(len(self.network.inflightdelay), 0)
 
+    def test_reset_keeps_target_algorithm(self):
+        """reset() without target_algo must not silently switch nodes to the fixed algorithm.
+            main() calls n.reset(target) between the mining and no-mining --test-mining runs.
+        """
+        network = Network(nnodes=3, target=2**240 - 1, target_algo="exp", npeers=2)
+        network.reset(2**240 - 1)
+        for node in network.nodes:
+            self.assertEqual(node.calc_target, node.calc_target_exponential_damping)
+
+    def test_reset_can_change_target_algorithm(self):
+        """An explicit target_algo still selects that algorithm."""
+        network = Network(nnodes=3, target=2**240 - 1, target_algo="exp", npeers=2)
+        network.reset(2**240 - 1, "fixed")
+        for node in network.nodes:
+            self.assertEqual(node.calc_target, node.calc_target_fixed)
+
+    def test_default_target_algorithm_is_fixed(self):
+        """A network created without target_algo still uses the fixed algorithm, before and after reset()."""
+        network = Network(nnodes=3, target=2**240 - 1, npeers=2)
+        network.reset()
+        for node in network.nodes:
+            self.assertEqual(node.calc_target, node.calc_target_fixed)
+
     def test_simulate(self):
         """Test simulating the network."""
         # Patch the tick method to avoid actual simulation

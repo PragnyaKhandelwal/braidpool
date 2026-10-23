@@ -228,6 +228,7 @@ class Node:
         self.tremaining   = None      # Ticks remaining before this node produces a bead
         self.incoming     = set()     # Initialize incoming set
         self.calc_target  = self.calc_target_simple # Default target calculation method
+        self.target_algo  = None      # Name of the algorithm chosen by reset(), None means "fixed"
         # A braid of all beads for this node
         self.braid        = Braid([genesis_bead])
         self.braid.tips   = {list(self.braid.beads.values())[0]}
@@ -239,7 +240,7 @@ class Node:
     def reset(self, initial_target=None, target_algo=None):
         """ Reset the computed braid while keeping the network layout. This must be called after the
             geospatial information for all nodes is filled in, to calculate self.tremaining if not
-            mining.
+            mining. If <target_algo> is not given, the node keeps the algorithm it already uses.
         """
         self.braid        = Braid([self.genesis_bead])
         self.braid.tips   = {list(self.braid.beads.values())[0]}
@@ -253,17 +254,19 @@ class Node:
             self.tremaining   = self.time_to_next_bead()
         self.working_bead = Bead(None, frozenset(self.braid.tips), self.network, self.nodeid)
 
-        if target_algo is None or target_algo == "fixed":
+        if target_algo is not None:
+            self.target_algo = target_algo
+        if self.target_algo is None or self.target_algo == "fixed":
             self.calc_target = self.calc_target_fixed
-        elif target_algo == "exp":
+        elif self.target_algo == "exp":
             self.calc_target = self.calc_target_exponential_damping
-        elif target_algo == "parents":
+        elif self.target_algo == "parents":
             self.calc_target = self.calc_target_parents
-        elif target_algo == "simple":
+        elif self.target_algo == "simple":
             self.calc_target = self.calc_target_simple
-        elif target_algo == "simple_asym":
+        elif self.target_algo == "simple_asym":
             self.calc_target = self.calc_target_simple_asym
-        elif target_algo == "simple_asym_damped":
+        elif self.target_algo == "simple_asym_damped":
             self.calc_target = self.calc_target_simple_asym_damped
 
     def __str__(self):
